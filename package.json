@@ -1,0 +1,6 @@
+{
+  "name": "locallink-region-explorer",
+  "version": "0.1.0",
+  "description": "청년 지방 창업 지역 탐색 — 공공데이터 API 연동 서버",
+  "scripts": { "start": "node server.js" }
+}

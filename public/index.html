@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>로컬링크 — 지역 탐색</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --primary:#ff385c; --primary-active:#e00b41;
+  --ink:#222; --body:#3f3f3f; --muted:#6a6a6a; --muted-soft:#929292;
+  --hairline:#ddd; --hairline-soft:#ebebeb; --canvas:#fff; --surface:#f7f7f7;
+  --shadow:rgba(0,0,0,.02) 0 0 0 1px, rgba(0,0,0,.04) 0 2px 6px 0, rgba(0,0,0,.1) 0 4px 8px 0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--body);
+  font-family:'Inter','Noto Sans KR',-apple-system,system-ui,Roboto,'Helvetica Neue',sans-serif}
+nav{height:80px;border-bottom:1px solid var(--hairline-soft);display:flex;align-items:center;padding:0 24px}
+.nav-in{max-width:1120px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:20px;font-weight:700;color:var(--primary);letter-spacing:-.3px}
+.nav-menu{display:flex;gap:20px;font-size:14px}
+.nav-menu .on{color:var(--ink);font-weight:500;border-bottom:2px solid var(--ink);padding-bottom:4px}
+.nav-menu .off{color:var(--muted)}
+main{max-width:1120px;margin:0 auto;padding:48px 24px 64px}
+h1{font-size:28px;font-weight:600;line-height:1.25;color:var(--ink);letter-spacing:-.4px;margin:0}
+.sub{font-size:16px;line-height:1.5;color:var(--muted);margin:8px 0 0}
+.sub small{font-size:13px;color:var(--muted-soft)}
+.dot{display:inline-block;width:6px;height:6px;border-radius:9999px;vertical-align:middle}
+.dot.live{background:#008a05}.dot.mock{background:var(--hairline)}
+.sorts{display:flex;gap:8px;margin:24px 0}
+.sorts button{padding:9px 16px;border-radius:9999px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;
+  border:1px solid var(--hairline);background:var(--canvas);color:var(--body)}
+.sorts button.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.layout{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(320px,1fr);gap:32px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.cards{grid-template-columns:1fr}}
+.card{cursor:pointer}
+.plate{position:relative;aspect-ratio:4/3;border-radius:14px;background:var(--surface);
+  display:flex;align-items:center;justify-content:center;border:1px solid var(--hairline-soft)}
+.card.sel .plate{border:2px solid var(--ink)}
+.badge-top{position:absolute;top:12px;left:12px;font-size:11px;font-weight:600;padding:4px 10px;
+  border-radius:9999px;background:var(--canvas);color:var(--ink);box-shadow:var(--shadow)}
+.heart{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;padding:4px}
+.meta{padding:10px 2px 0}
+.meta .row1{display:flex;justify-content:space-between;align-items:baseline}
+.meta .name{font-size:16px;font-weight:600;color:var(--ink)}
+.meta .score{font-size:14px;color:var(--ink)}
+.meta .stats{font-size:14px;color:var(--muted);margin:2px 0 0}
+.meta .rent{font-size:14px;color:var(--ink);margin:4px 0 0}
+.meta .rent b{font-weight:600}
+.meta .rent span{color:var(--muted);font-weight:400}
+aside{position:sticky;top:24px;background:var(--canvas);border-radius:14px;
+  border:1px solid var(--hairline);box-shadow:var(--shadow);padding:24px}
+.a-head{text-align:center;padding-bottom:16px;border-bottom:1px solid var(--hairline-soft)}
+.a-rank{font-size:13px;color:var(--muted);margin:0 0 2px}
+.a-name{font-size:20px;font-weight:600;color:var(--ink);margin:0;letter-spacing:-.2px}
+.a-score{font-size:64px;font-weight:700;line-height:1.15;letter-spacing:-1px;color:var(--ink)}
+.a-cap{font-size:13px;color:var(--muted);margin:0}
+.a-stats{display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;padding:14px 0;border-bottom:1px solid var(--hairline-soft)}
+.a-stats p{margin:0}
+.a-stats .v{font-size:16px;font-weight:600;color:var(--ink)}
+.a-stats .l{font-size:12px;color:var(--muted);margin-top:2px}
+.a-stats .u{font-size:11px;color:var(--muted-soft)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;padding:14px 0;border-bottom:1px solid var(--hairline-soft)}
+.tag{font-size:11px;font-weight:600;padding:4px 10px;border-radius:9999px;background:var(--canvas);
+  border:1px solid var(--hairline);box-shadow:var(--shadow);color:var(--ink)}
+.tag.soft{background:var(--surface);border:none;box-shadow:none;color:var(--muted)}
+.pol{padding:12px 0;border-bottom:1px solid var(--hairline-soft)}
+.pol p{font-size:13px;color:var(--body);margin:2px 0;line-height:1.4}
+.pol .pl{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 6px}
+.story{font-size:14px;line-height:1.55;color:var(--body);padding:14px 0;margin:0;border-bottom:1px solid var(--hairline-soft)}
+.mapwrap{padding:14px 0 16px}
+.mapwrap .ml{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 8px}
+.cta{width:100%;height:48px;border-radius:8px;border:none;cursor:pointer;background:var(--primary);
+  color:#fff;font-size:16px;font-weight:500;font-family:inherit}
+.cta:active{background:var(--primary-active)}
+.a-foot{font-size:12px;color:var(--muted-soft);text-align:center;margin:8px 0 0}
+footer{border-top:1px solid var(--hairline-soft);padding:24px}
+.foot-in{max-width:1120px;margin:0 auto;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.loading{padding:48px;color:var(--muted);font-size:15px}
+</style>
+</head>
+<body>
+<nav><div class="nav-in">
+  <span class="logo">로컬링크</span>
+  <div class="nav-menu"><span class="on">지역 탐색</span><span class="off">혜택 계산기</span><span class="off">답사 코스</span></div>
+</div></nav>
+
+<main>
+  <header>
+    <h1>카페·음식점 창업, 어디가 좋을까요?</h1>
+    <p class="sub">소득세 100% 감면 지역 중에서 임대료, 경쟁, 청년 인구를 함께 봤어요.
+      <small id="legend"> · <span class="dot live"></span> 실데이터 <span class="dot mock"></span> 예시값</small>
+    </p>
+  </header>
+  <div class="sorts" id="sorts"></div>
+  <div class="layout">
+    <section class="cards" id="cards"><div class="loading">지역 데이터를 모으는 중이에요…</div></section>
+    <aside id="detail" style="display:none"></aside>
+  </div>
+</main>
+
+<footer><div class="foot-in">
+  <span>로컬링크 — 청년과 지역을 잇습니다</span>
+  <span>출처: 소상공인시장진흥공단 상가(상권)정보 · 온통청년 · KOSIS · 임대료는 예시값</span>
+</div></footer>
+
+<script>
+"use strict";
+
+/* ── 상태 ── */
+var state = { regions: [], updatedAt: null, sort: "추천순", selectedId: null, saved: {} };
+
+var SORTS = {
+  "추천순": function (a, b) { return b.score - a.score; },
+  "임대료 낮은 순": function (a, b) { return a.rent - b.rent; },
+  "경쟁 적은 순": function (a, b) { return a.competeIdx - b.competeIdx; },
+};
+
+/* ── SVG 조각 ── */
+function glyph(kind) {
+  var s = 'stroke="#222" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+  if (kind === "sea") return '<svg width="56" height="56" viewBox="0 0 56 56"><path d="M8 34c4-3 8-3 12 0s8 3 12 0 8-3 12 0" ' + s + '/><path d="M12 42c4-3 8-3 12 0s8 3 12 0" ' + s + '/><path d="M28 26a9 9 0 0 1 9-9M20 17l3 3M28 12v4" ' + s + '/></svg>';
+  if (kind === "castle") return '<svg width="56" height="56" viewBox="0 0 56 56"><path d="M14 42V26l6-4v-6l3 2 3-2 3 2 3-2 3 2 3-2v6l6 4v16" ' + s + '/><path d="M10 42h36M25 42v-8h6v8" ' + s + '/></svg>';
+  if (kind === "river") return '<svg width="56" height="56" viewBox="0 0 56 56"><path d="M12 14c10 4 6 10 0 14s-2 12 8 14M30 12c10 4 6 10 0 14s-2 12 8 14" ' + s + '/><path d="M42 20l4-4M44 28h5" ' + s + '/></svg>';
+  return '<svg width="56" height="56" viewBox="0 0 56 56"><path d="M8 40l10-14 8 10 6-8 12 12" ' + s + '/><path d="M10 46h36M38 16a5 5 0 1 1 0 .01" ' + s + '/></svg>';
+}
+function heart(on) {
+  var fill = on ? "#ff385c" : "rgba(0,0,0,0.4)";
+  var stroke = on ? "#ff385c" : "#fff";
+  return '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 20.5c-5.5-4.1-9-7.2-9-11A5 5 0 0 1 12 6.6 5 5 0 0 1 21 9.5c0 3.8-3.5 6.9-9 11z" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.6"/></svg>';
+}
+function srcDot(source, title) {
+  var cls = source === "live" ? "live" : "mock";
+  var t = source === "live" ? "공공 API 실데이터" : "예시값 (API 키 설정 시 실데이터로 교체)";
+  return '<span class="dot ' + cls + '" title="' + (title || t) + '" style="margin-left:4px"></span>';
+}
+function dotMap() {
+  var lngMin = 125.8, lngMax = 129.5, latMin = 34.2, latMax = 38.2;
+  var out = '<svg width="100%" height="150" viewBox="0 0 260 150" style="display:block">' +
+    '<rect x="1" y="1" width="258" height="148" rx="12" fill="#f7f7f7" stroke="#ebebeb"/>';
+  state.regions.forEach(function (r) {
+    var x = 16 + ((r.lng - lngMin) / (lngMax - lngMin)) * 228;
+    var y = 14 + ((latMax - r.lat) / (latMax - latMin)) * 122;
+    var on = r.id === state.selectedId;
+    out += '<g data-map-id="' + r.id + '" style="cursor:pointer">' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (on ? 7 : 4.5) + '" fill="' + (on ? "#ff385c" : "#fff") + '" stroke="' + (on ? "#ff385c" : "#929292") + '" stroke-width="1.4"/>' +
+      '<text x="' + x + '" y="' + (y - 10) + '" text-anchor="middle" font-size="10" fill="' + (on ? "#222" : "#6a6a6a") + '" font-weight="' + (on ? 600 : 400) + '">' + r.name.replace(/(시|군)$/, "") + '</text></g>';
+  });
+  return out + "</svg>";
+}
+
+/* ── 렌더 ── */
+function sortedRegions() { return state.regions.slice().sort(SORTS[state.sort]); }
+
+function renderSorts() {
+  var html = "";
+  Object.keys(SORTS).forEach(function (name) {
+    html += '<button data-sort="' + name + '" class="' + (state.sort === name ? "on" : "") + '">' + name + "</button>";
+  });
+  document.getElementById("sorts").innerHTML = html;
+}
+
+function renderCards() {
+  var sorted = sortedRegions();
+  var html = "";
+  sorted.forEach(function (r, i) {
+    var sel = r.id === state.selectedId ? " sel" : "";
+    html += '<article class="card' + sel + '" data-id="' + r.id + '">' +
+      '<div class="plate">' + glyph(r.glyph) +
+      (i === 0 ? '<span class="badge-top">이번 주 추천</span>' : "") +
+      '<button class="heart" data-save="' + r.id + '" aria-label="저장">' + heart(!!state.saved[r.id]) + "</button></div>" +
+      '<div class="meta"><div class="row1"><span class="name">' + r.sido + " " + r.name + '</span><span class="score">★ ' + r.score.toFixed(2) + "</span></div>" +
+      '<p class="stats">음식점 ' + r.storeCount.toLocaleString() + "곳" + srcDot(r.sources.storeCount) +
+      " · 청년 " + r.youthRatio + "%" + srcDot(r.sources.youthRatio) +
+      " · 정책 " + r.policyCount + "개" + srcDot(r.sources.policyCount) + "</p>" +
+      '<p class="rent"><b>평당 ' + r.rent + '만 원</b><span> /월 임대료</span>' + srcDot(r.sources.rent) + "</p></div></article>";
+  });
+  document.getElementById("cards").innerHTML = html;
+}
+
+function renderDetail() {
+  var r = state.regions.find(function (x) { return x.id === state.selectedId; });
+  var el = document.getElementById("detail");
+  if (!r) { el.style.display = "none"; return; }
+  var rank = sortedRegions().findIndex(function (x) { return x.id === r.id; }) + 1;
+  var tags = '<span class="tag">소득세 ' + r.benefit.rate * 100 + "% 감면</span>";
+  if (r.benefit.popDecline) tags += '<span class="tag">인구감소지역</span>';
+  if (r.benefit.ozRound) tags += '<span class="tag">기회발전특구 ' + r.benefit.ozRound + "차</span>";
+  tags += '<span class="tag soft">청년정책 ' + r.policyCount + "개" + srcDot(r.sources.policyCount) + "</span>";
+  var pol = "";
+  if (r.policyTop && r.policyTop.length) {
+    pol = '<div class="pol"><p class="pl">이 지역 청년정책 (실데이터)</p>' +
+      r.policyTop.map(function (p) { return "<p>· " + p + "</p>"; }).join("") + "</div>";
+  }
+  el.style.display = "block";
+  el.innerHTML =
+    '<div class="a-head"><p class="a-rank">' + state.sort + " " + rank + '위</p>' +
+    '<p class="a-name">' + r.sido + " " + r.name + '</p>' +
+    '<div class="a-score">' + r.score.toFixed(2) + "</div>" +
+    '<p class="a-cap">임대료·경쟁·청년 인구·혜택 종합 점수</p></div>' +
+    '<div class="a-stats">' +
+    '<div><p class="v">' + r.rent + "만" + srcDot(r.sources.rent) + '</p><p class="l">임대료</p><p class="u">3.3㎡ 월</p></div>' +
+    '<div><p class="v">' + r.storeCount.toLocaleString() + srcDot(r.sources.storeCount) + '</p><p class="l">음식점 수</p><p class="u">시군구 전체</p></div>' +
+    '<div><p class="v">' + r.youthRatio + "%" + srcDot(r.sources.youthRatio) + '</p><p class="l">청년 비율</p><p class="u">20–39세</p></div></div>' +
+    '<div class="tags">' + tags + "</div>" + pol +
+    '<p class="story">' + r.story + "</p>" +
+    '<div class="mapwrap"><p class="ml">위치 미리보기</p>' + dotMap() + "</div>" +
+    '<button class="cta">이 지역 세금 계산해 보기</button>' +
+    '<p class="a-foot">데이터 갱신: ' + new Date(state.updatedAt).toLocaleString("ko-KR") + " · 24시간 캐시</p>";
+}
+
+function renderAll() { renderSorts(); renderCards(); renderDetail(); }
+
+/* ── 이벤트 (위임) ── */
+document.addEventListener("click", function (e) {
+  var saveBtn = e.target.closest("[data-save]");
+  if (saveBtn) {
+    var id = saveBtn.getAttribute("data-save");
+    state.saved[id] = !state.saved[id];
+    renderCards();
+    return;
+  }
+  var sortBtn = e.target.closest("[data-sort]");
+  if (sortBtn) { state.sort = sortBtn.getAttribute("data-sort"); renderAll(); return; }
+  var card = e.target.closest("[data-id]");
+  if (card) { state.selectedId = card.getAttribute("data-id"); renderAll(); return; }
+  var mapDot = e.target.closest("[data-map-id]");
+  if (mapDot) { state.selectedId = mapDot.getAttribute("data-map-id"); renderAll(); return; }
+});
+
+/* ── 데이터 로드 ── */
+fetch("/api/regions")
+  .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(function (j) {
+    state.regions = j.regions;
+    state.updatedAt = j.updatedAt;
+    state.selectedId = j.regions.length ? j.regions[0].id : null;
+    var anyLive = j.regions.some(function (r) {
+      return Object.values(r.sources).indexOf("live") >= 0;
+    });
+    if (!anyLive) document.getElementById("legend").innerHTML +=
+      " — 아직 모든 지표가 예시값이에요. README를 따라 API 키를 넣으면 실데이터로 바뀌어요.";
+    renderAll();
+  })
+  .catch(function (e) {
+    document.getElementById("cards").innerHTML =
+      '<div class="loading"><b style="color:#222">데이터를 불러오지 못했어요</b><br>' + e.message +
+      " — 서버(node server.js)가 켜져 있는지 확인해 주세요.</div>";
+  });
+</script>
+</body>
+</html>
