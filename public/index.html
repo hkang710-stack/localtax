@@ -94,7 +94,18 @@ footer{border-top:1px solid var(--hairline-soft);padding:24px}
       <small id="legend"> · <span class="dot live"></span> 실데이터 <span class="dot mock"></span> 예시값</small>
     </p>
   </header>
+  <div class="sorts" id="controls" style="flex-wrap:wrap">
+    <input id="q" type="search" placeholder="지역 이름 검색 (예: 정읍, 강화)"
+      style="flex:1;min-width:200px;height:44px;padding:0 16px;border-radius:9999px;border:1px solid var(--hairline);
+             font-family:inherit;font-size:14px;outline:none" />
+    <select id="sidoFilter"
+      style="height:44px;padding:0 12px;border-radius:9999px;border:1px solid var(--hairline);
+             font-family:inherit;font-size:14px;background:var(--canvas);color:var(--body)">
+      <option value="">모든 시·도</option>
+    </select>
+  </div>
   <div class="sorts" id="sorts"></div>
+  <p id="count" style="font-size:13px;color:var(--muted-soft);margin:-12px 0 16px"></p>
   <div class="layout">
     <section class="cards" id="cards"><div class="loading">지역 데이터를 모으는 중이에요…</div></section>
     <aside id="detail" style="display:none"></aside>
@@ -110,7 +121,7 @@ footer{border-top:1px solid var(--hairline-soft);padding:24px}
 "use strict";
 
 /* ── 상태 ── */
-var state = { regions: [], updatedAt: null, sort: "추천순", selectedId: null, saved: {} };
+var state = { regions: [], updatedAt: null, sort: "추천순", selectedId: null, saved: {}, q: "", sido: "" };
 
 var SORTS = {
   "추천순": function (a, b) { return b.score - a.score; },
@@ -137,22 +148,31 @@ function srcDot(source, title) {
   return '<span class="dot ' + cls + '" title="' + (title || t) + '" style="margin-left:4px"></span>';
 }
 function dotMap() {
-  var lngMin = 125.8, lngMax = 129.5, latMin = 34.2, latMax = 38.2;
+  var lngMin = 125.9, lngMax = 129.6, latMin = 34.0, latMax = 38.5;
+  var clamp = function (v, lo, hi) { return Math.max(lo, Math.min(hi, v)); };
   var out = '<svg width="100%" height="150" viewBox="0 0 260 150" style="display:block">' +
     '<rect x="1" y="1" width="258" height="148" rx="12" fill="#f7f7f7" stroke="#ebebeb"/>';
-  state.regions.forEach(function (r) {
-    var x = 16 + ((r.lng - lngMin) / (lngMax - lngMin)) * 228;
-    var y = 14 + ((latMax - r.lat) / (latMax - latMin)) * 122;
+  filteredRegions().forEach(function (r) {
+    var x = 14 + (clamp(r.lng, lngMin, lngMax) - lngMin) / (lngMax - lngMin) * 232;
+    var y = 12 + (latMax - clamp(r.lat, latMin, latMax)) / (latMax - latMin) * 126;
     var on = r.id === state.selectedId;
     out += '<g data-map-id="' + r.id + '" style="cursor:pointer">' +
-      '<circle cx="' + x + '" cy="' + y + '" r="' + (on ? 7 : 4.5) + '" fill="' + (on ? "#ff385c" : "#fff") + '" stroke="' + (on ? "#ff385c" : "#929292") + '" stroke-width="1.4"/>' +
-      '<text x="' + x + '" y="' + (y - 10) + '" text-anchor="middle" font-size="10" fill="' + (on ? "#222" : "#6a6a6a") + '" font-weight="' + (on ? 600 : 400) + '">' + r.name.replace(/(시|군)$/, "") + '</text></g>';
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (on ? 6.5 : 3) + '" fill="' + (on ? "#ff385c" : "#fff") + '" stroke="' + (on ? "#ff385c" : "#929292") + '" stroke-width="1.2"/>' +
+      (on ? '<text x="' + x + '" y="' + (y - 10) + '" text-anchor="middle" font-size="10" fill="#222" font-weight="600">' + r.name.replace(/(시|군)$/, "") + "</text>" : "") + "</g>";
   });
   return out + "</svg>";
 }
 
 /* ── 렌더 ── */
-function sortedRegions() { return state.regions.slice().sort(SORTS[state.sort]); }
+function filteredRegions() {
+  var q = state.q.trim();
+  return state.regions.filter(function (r) {
+    if (state.sido && r.sido !== state.sido) return false;
+    if (q && (r.sido + " " + r.name).indexOf(q) < 0) return false;
+    return true;
+  });
+}
+function sortedRegions() { return filteredRegions().sort(SORTS[state.sort]); }
 
 function renderSorts() {
   var html = "";
@@ -164,6 +184,13 @@ function renderSorts() {
 
 function renderCards() {
   var sorted = sortedRegions();
+  document.getElementById("count").textContent =
+    sorted.length + "곳" + (state.q || state.sido ? " (전체 " + state.regions.length + "곳 중)" : "");
+  if (!sorted.length) {
+    document.getElementById("cards").innerHTML =
+      '<div class="loading">검색 결과가 없어요. 다른 이름으로 찾아보세요.</div>';
+    return;
+  }
   var html = "";
   sorted.forEach(function (r, i) {
     var sel = r.id === state.selectedId ? " sel" : "";
@@ -214,6 +241,13 @@ function renderDetail() {
 function renderAll() { renderSorts(); renderCards(); renderDetail(); }
 
 /* ── 이벤트 (위임) ── */
+document.addEventListener("input", function (e) {
+  if (e.target.id === "q") { state.q = e.target.value; renderCards(); renderDetail(); }
+});
+document.addEventListener("change", function (e) {
+  if (e.target.id === "sidoFilter") { state.sido = e.target.value; renderCards(); renderDetail(); }
+});
+
 document.addEventListener("click", function (e) {
   var saveBtn = e.target.closest("[data-save]");
   if (saveBtn) {
@@ -237,6 +271,12 @@ fetch("/api/regions")
     state.regions = j.regions;
     state.updatedAt = j.updatedAt;
     state.selectedId = j.regions.length ? j.regions[0].id : null;
+    var sidos = [];
+    j.regions.forEach(function (r) { if (sidos.indexOf(r.sido) < 0) sidos.push(r.sido); });
+    var sel = document.getElementById("sidoFilter");
+    sidos.sort().forEach(function (s) {
+      var o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o);
+    });
     var anyLive = j.regions.some(function (r) {
       return Object.values(r.sources).indexOf("live") >= 0;
     });

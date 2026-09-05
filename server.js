@@ -13,11 +13,61 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const REGIONS = require("./config/regions");
-const { judge } = require("./judge");
+const CURATED = require("./config/regions");
+const COORDS = require("./config/coords");
+const judgeModule = require("./judge");
+const { judge } = judgeModule;
 const { getStoreCount } = require("./collectors/sbiz");
 const { getYouthPolicies } = require("./collectors/youth");
 const { getYouthRatio } = require("./collectors/kosis");
+
+/* ── 지역 목록 생성: 인구감소지역 89곳 전체 + 큐레이션 8곳 병합 ──
+   큐레이션에 없는 지역의 지표는 이름 기반 시드로 만든 결정적 예시값(항상 mock 표시).
+   행정코드(sggCd)를 config/regions.js에 채우면 그 지역만 실데이터 수집 대상이 됩니다. */
+function seeded(name, min, max, salt) {
+  let h = 2166136261 >>> 0;
+  const s = name + (salt || "");
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return min + ((h >>> 0) % 1000) / 1000 * (max - min);
+}
+const GLYPHS = ["field", "castle", "river", "sea"];
+
+function buildRegionList() {
+  const curatedByName = {};
+  for (const c of CURATED) curatedByName[c.sido + " " + c.name] = c;
+
+  const list = [];
+  const seen = new Set();
+  const pd = judgeModule.POP_DECLINE || {};
+  for (const sido of Object.keys(pd)) {
+    for (const name of pd[sido]) {
+      const key = sido + " " + name;
+      seen.add(key);
+      const cur = curatedByName[key];
+      const coord = COORDS[key] || [36.5, 127.8];
+      if (cur) { list.push(cur); continue; }
+      list.push({
+        id: key.replace(" ", "-"), name, sido,
+        sggCd: null, // code.go.kr에서 확인해 채우면 실데이터 수집 대상이 됨
+        lat: coord[0], lng: coord[1],
+        glyph: GLYPHS[Math.floor(seeded(key, 0, 4, "g"))],
+        story: null,
+        mock: {
+          storeCount: Math.round(seeded(key, 300, 2500, "s")),
+          youthRatio: Math.round(seeded(key, 9, 19, "y")),
+          policyCount: Math.round(seeded(key, 3, 11, "p")),
+          rent: Math.round(seeded(key, 3.0, 7.5, "r") * 10) / 10,
+        },
+      });
+    }
+  }
+  // 큐레이션 중 인구감소지역이 아닌 비교용 지역(전주, 강릉 등) 추가
+  for (const c of CURATED) {
+    if (!seen.has(c.sido + " " + c.name)) list.push(c);
+  }
+  return list;
+}
+const REGIONS = buildRegionList();
 
 /* ── .env 로더 (외부 패키지 없이) ── */
 (function loadEnv() {
@@ -78,17 +128,22 @@ async function buildRegions() {
   if (cached) return cached;
 
   const rows = await Promise.all(REGIONS.map(async (region) => {
+    const liveOk = !!region.sggCd; // 행정코드 미확인 지역은 예시값만 사용
     const [store, youthPol, youthRatio] = await Promise.all([
-      getStoreCount(region, KEYS.sbiz),
-      getYouthPolicies(region, KEYS.youth),
-      getYouthRatio(region, KEYS.kosis),
+      getStoreCount(region, liveOk ? KEYS.sbiz : ""),
+      getYouthPolicies(region, liveOk ? KEYS.youth : ""),
+      getYouthRatio(region, liveOk ? KEYS.kosis : ""),
     ]);
     const b = judge(region.sido, region.name);
     // 경쟁지수: 음식점 수를 만 단위 상대값으로 (실서비스에선 인구수로 나눠 천명당 업소수로 교체)
     const competeIdx = Math.round((store.value / 100)) / 10;
+    const story = region.story ||
+      (b.flags?.기회발전특구
+        ? "인구감소지역이면서 기회발전특구까지 겹치는 지역이에요. 취득세·재산세 혜택 여지도 확인해 보세요."
+        : "소득세 100% 감면 대상 인구감소지역이에요. 지자체 청년 지원사업을 함께 살펴보세요.");
     return {
       id: region.id, name: region.name, sido: region.sido,
-      lat: region.lat, lng: region.lng, glyph: region.glyph, story: region.story,
+      lat: region.lat, lng: region.lng, glyph: region.glyph, story,
       storeCount: store.value, competeIdx,
       youthRatio: youthRatio.value,
       policyCount: youthPol.count, policyTop: youthPol.top,
