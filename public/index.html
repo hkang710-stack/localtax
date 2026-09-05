@@ -36,7 +36,7 @@ h1{font-size:28px;font-weight:600;line-height:1.25;color:var(--ink);letter-spaci
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:600px){.cards{grid-template-columns:1fr}}
 .card{cursor:pointer}
-.plate{position:relative;aspect-ratio:4/3;border-radius:14px;background:var(--surface);
+.plate{position:relative;aspect-ratio:4/3;border-radius:14px;background:var(--surface);overflow:hidden;
   display:flex;align-items:center;justify-content:center;border:1px solid var(--hairline-soft)}
 .card.sel .plate{border:2px solid var(--ink)}
 .badge-top{position:absolute;top:12px;left:12px;font-size:11px;font-weight:600;padding:4px 10px;
@@ -91,6 +91,7 @@ footer{border-top:1px solid var(--hairline-soft);padding:24px}
   <header>
     <h1>카페·음식점 창업, 어디가 좋을까요?</h1>
     <p class="sub">소득세 100% 감면 지역 중에서 임대료, 경쟁, 청년 인구를 함께 봤어요.
+      <small>감면율은 만 34세 이하 청년 창업 기준이에요(병역 기간 최대 6년 차감).</small>
       <small id="legend"> · <span class="dot live"></span> 실데이터 <span class="dot mock"></span> 예시값</small>
     </p>
   </header>
@@ -114,7 +115,7 @@ footer{border-top:1px solid var(--hairline-soft);padding:24px}
 
 <footer><div class="foot-in">
   <span>로컬링크 — 청년과 지역을 잇습니다</span>
-  <span>출처: 소상공인시장진흥공단 상가(상권)정보 · 온통청년 · KOSIS · 임대료는 예시값</span>
+  <span>출처: 소상공인시장진흥공단 상가(상권)정보 · 온통청년 · KOSIS · 사진: 한국관광공사 · 임대료는 예시값</span>
 </div></footer>
 
 <script>
@@ -194,8 +195,11 @@ function renderCards() {
   var html = "";
   sorted.forEach(function (r, i) {
     var sel = r.id === state.selectedId ? " sel" : "";
+    var plateInner = (r.photos && r.photos.length)
+      ? '<img src="' + r.photos[0] + '" alt="' + r.name + '" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit">'
+      : glyph(r.glyph);
     html += '<article class="card' + sel + '" data-id="' + r.id + '">' +
-      '<div class="plate">' + glyph(r.glyph) +
+      '<div class="plate">' + plateInner +
       (i === 0 ? '<span class="badge-top">이번 주 추천</span>' : "") +
       '<button class="heart" data-save="' + r.id + '" aria-label="저장">' + heart(!!state.saved[r.id]) + "</button></div>" +
       '<div class="meta"><div class="row1"><span class="name">' + r.sido + " " + r.name + '</span><span class="score">★ ' + r.score.toFixed(2) + "</span></div>" +

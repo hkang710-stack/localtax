@@ -20,6 +20,7 @@ const { judge } = judgeModule;
 const { getStoreCount } = require("./collectors/sbiz");
 const { getYouthPolicies } = require("./collectors/youth");
 const { getYouthRatio } = require("./collectors/kosis");
+const { getPhotos } = require("./collectors/tour");
 
 /* ── 지역 목록 생성: 인구감소지역 89곳 전체 + 큐레이션 8곳 병합 ──
    큐레이션에 없는 지역의 지표는 이름 기반 시드로 만든 결정적 예시값(항상 mock 표시).
@@ -83,6 +84,7 @@ const KEYS = {
   sbiz: process.env.SBIZ_API_KEY || "",
   youth: process.env.YOUTH_API_KEY || "",
   kosis: process.env.KOSIS_API_KEY || "",
+  tour: process.env.TOUR_API_KEY || "",
 };
 
 /* ── 캐시 ── */
@@ -129,10 +131,11 @@ async function buildRegions() {
 
   const rows = await Promise.all(REGIONS.map(async (region) => {
     const liveOk = !!region.sggCd; // 행정코드 미확인 지역은 예시값만 사용
-    const [store, youthPol, youthRatio] = await Promise.all([
+    const [store, youthPol, youthRatio, photo] = await Promise.all([
       getStoreCount(region, liveOk ? KEYS.sbiz : ""),
       getYouthPolicies(region, liveOk ? KEYS.youth : ""),
       getYouthRatio(region, liveOk ? KEYS.kosis : ""),
+      getPhotos(region, KEYS.tour), // 이름 기반이라 행정코드 없어도 동작
     ]);
     const b = judge(region.sido, region.name);
     // 경쟁지수: 음식점 수를 만 단위 상대값으로 (실서비스에선 인구수로 나눠 천명당 업소수로 교체)
@@ -144,6 +147,7 @@ async function buildRegions() {
     return {
       id: region.id, name: region.name, sido: region.sido,
       lat: region.lat, lng: region.lng, glyph: region.glyph, story,
+      photos: photo.photos,
       storeCount: store.value, competeIdx,
       youthRatio: youthRatio.value,
       policyCount: youthPol.count, policyTop: youthPol.top,
@@ -177,7 +181,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end(JSON.stringify({
         ok: true,
-        keys: { 상권정보: !!KEYS.sbiz, 온통청년: !!KEYS.youth, KOSIS: !!KEYS.kosis },
+        keys: { 상권정보: !!KEYS.sbiz, 온통청년: !!KEYS.youth, KOSIS: !!KEYS.kosis, 관광사진: !!KEYS.tour },
         안내: "키가 false인 지표는 예시값으로 표시됩니다. .env에 키를 넣고 서버를 재시작하세요.",
       }));
     }
