@@ -13,11 +13,13 @@ const BASE = "https://apis.data.go.kr/B551011/KorService2/searchKeyword2";
 
 async function fetchLive(regionName, apiKey) {
   const params = new URLSearchParams({
-    serviceKey: apiKey, MobileOS: "ETC", MobileApp: "locallink",
+    MobileOS: "ETC", MobileApp: "locallink",
     _type: "json", keyword: regionName.replace(/(시|군|구)$/, ""), // "정읍시" → "정읍"
     arrange: "O", numOfRows: "10", pageNo: "1",
   });
-  const res = await fetch(`${BASE}?${params}`, { signal: AbortSignal.timeout(10000) });
+  // 키 이중 인코딩 방지: 이미 %가 들어간 Encoding 키는 그대로, Decoding 키는 인코딩해서 사용
+  const keyPart = /%[0-9A-Fa-f]{2}/.test(apiKey) ? apiKey : encodeURIComponent(apiKey);
+  const res = await fetch(`${BASE}?serviceKey=${keyPart}&${params}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`TourAPI HTTP ${res.status}`);
   const json = await res.json();
   const items = json?.response?.body?.items?.item ?? [];
