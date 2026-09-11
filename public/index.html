@@ -238,7 +238,7 @@ function renderDetail() {
     '<div class="tags">' + tags + "</div>" + pol +
     '<p class="story">' + r.story + "</p>" +
     '<div class="mapwrap"><p class="ml">위치 미리보기</p>' + dotMap() + "</div>" +
-    '<button class="cta">이 지역 세금 계산해 보기</button>' +
+        '<a class="cta" href="region.html?id=' + encodeURIComponent(selected.id) + '" style="display:block;text-align:center;text-decoration:none;line-height:48px">이 지역 자세히 보기 · 계산기</a>' +
     '<p class="a-foot">데이터 갱신: ' + new Date(state.updatedAt).toLocaleString("ko-KR") + " · 24시간 캐시</p>";
 }
 
